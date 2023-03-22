@@ -1,2 +1,2 @@
 # Music-Bot-3000
- 
+ This is a personal project of mine, attempting to create new music from midi files. Nothing spectacular just for fun. No copyright violations are intended and if there is any issue with anything, please let me know!
