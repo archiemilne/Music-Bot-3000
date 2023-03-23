@@ -3,3 +3,4 @@
 test.py
 *.npy
 .vscode/settings.json
+*.json
