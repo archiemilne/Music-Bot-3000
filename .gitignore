@@ -1,4 +1,6 @@
 
 *.mid
-test.py
 .vscode/settings.json
+*.hdf5
+midi_debug.py
+temp/*
