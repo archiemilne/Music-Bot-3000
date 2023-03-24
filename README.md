@@ -5,7 +5,7 @@ This is a personal project of mine, attempting to create new music from midi fil
 2. Place midi files into the `midi_in` folder. The more inputted files the better the end result, but the longer it takes.
 3. Run and enjoy! 🙂
 
-Folders to create (if you don't clone the repo):
+### *Folders to create (if you don't clone the repo):
 1. `midi_in`
 2. `midi_out`
 3. `weights`
