@@ -4,13 +4,15 @@ from music21 import converter, instrument, note, chord, stream
 from keras.layers import LSTM, Dense, Activation, Dropout
 from keras.models import Sequential
 from keras.utils import np_utils
+from keras.callbacks import ModelCheckpoint
 
 # Constant defs
 INPUT_FOLDER = 'midi_in'
 OUTPUT_FOLDER = 'midi_out'
-SEQUENCE_LENGTH = 100
+SEQUENCE_LENGTH = 200
 EPOCHS = 100
-BATCH_SIZE = 64
+BATCH_SIZE = 32
+TEMPERATURE = 1.0
 
 # Parse MIDI files
 def parse_midi_files(folder):
@@ -78,7 +80,7 @@ def create_lstm_model(input_shape, n_unique_notes):
     return model
 
 # Generate the musical notes from the model
-def generate_notes(model, network_input, pitchnames, n_notes):
+def generate_notes(model, network_input, pitchnames, n_notes, temperature=1.0):
     start = np.random.randint(0, len(network_input) - 1)
     int_to_note = dict((number, note) for number, note in enumerate(pitchnames))
     pattern = network_input[start]
@@ -88,6 +90,12 @@ def generate_notes(model, network_input, pitchnames, n_notes):
         prediction_input = np.reshape(pattern, (1, len(pattern), 1))
         prediction_input = prediction_input / float(len(pitchnames))
         prediction = model.predict(prediction_input, verbose=0)
+        
+        # Apply temperature
+        prediction = np.log(prediction) / temperature
+        exp_preds = np.exp(prediction)
+        prediction = exp_preds / np.sum(exp_preds)
+
         index = np.argmax(prediction)
         result = int_to_note[index]
         prediction_output.append(result)
@@ -123,16 +131,27 @@ def create_midi(prediction_output, output_folder, filename="output"):
     midi_stream = stream.Stream(output_notes)
     midi_stream.write('midi', fp=os.path.join(output_folder, f'{filename}.mid'))
 
-
 def main():
     notes = parse_midi_files(INPUT_FOLDER)
     n_vocab = len(set(notes))
     network_input, network_output = prepare_sequences(notes, n_vocab)
     model = create_lstm_model(network_input.shape[1:], n_vocab)
-    model.fit(network_input, network_output, epochs=EPOCHS, batch_size=BATCH_SIZE)
+
+    # Add the ModelCheckpoint callback to save the model weights every 10 epochs
+    checkpoint_callback = ModelCheckpoint(
+        filepath='weights/weights.{epoch:02d}.hdf5',
+        period=10,
+        save_weights_only=True,
+    )
+
+    model.fit(network_input, network_output, epochs=EPOCHS, batch_size=BATCH_SIZE, callbacks=[checkpoint_callback])
     pitchnames = sorted(set(item for item in notes))
-    prediction_output = generate_notes(model, network_input, pitchnames, SEQUENCE_LENGTH)
-    create_midi(prediction_output, OUTPUT_FOLDER)
+
+    # Generate MIDI files for each saved set of weights
+    for i in range(10, EPOCHS + 1, 10):
+        model.load_weights(f'weights/weights.{i:02d}.hdf5')
+        prediction_output = generate_notes(model, network_input, pitchnames, SEQUENCE_LENGTH, temperature=TEMPERATURE)
+        create_midi(prediction_output, OUTPUT_FOLDER, f'output_epoch_{i}')
 
 if __name__ == '__main__':
     main()
