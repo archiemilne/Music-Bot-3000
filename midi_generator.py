@@ -14,7 +14,8 @@ tf.compat.v1.keras.backend.set_session(tf.compat.v1.Session())
 INPUT_FOLDER = 'midi_in'
 OUTPUT_FOLDER = 'midi_out'
 SEQUENCE_LENGTH = 200
-EPOCHS = 100
+EPOCHS = 50 # Number of times to run
+PERIOD = 5 # Number of Epochs between outputs
 BATCH_SIZE = 32
 TEMPERATURE = 1.0
 
@@ -148,10 +149,10 @@ def main():
     network_input, network_output = prepare_sequences(notes, n_vocab)
     model = create_lstm_model(network_input.shape[1:], n_vocab)
 
-    # Add the ModelCheckpoint callback to save the model weights every 10 epochs
+    # Add the ModelCheckpoint callback to save the model weights every PERIOD epochs
     checkpoint_callback = ModelCheckpoint(
         filepath='weights/weights.{epoch:02d}.hdf5',
-        period=10,
+        period=PERIOD,
         save_weights_only=True,
     )
 
@@ -159,7 +160,7 @@ def main():
     pitchnames = sorted(set(item for item in notes))
 
     # Generate MIDI files for each saved set of weights
-    for i in range(10, EPOCHS + 1, 10):
+    for i in range(PERIOD, EPOCHS + 1, PERIOD):
         model.load_weights(f'weights/weights.{i:02d}.hdf5')
         prediction_output = generate_notes(model, network_input, pitchnames, SEQUENCE_LENGTH, temperature=TEMPERATURE)
         create_midi(prediction_output, OUTPUT_FOLDER, f'output_epoch_{i}')
