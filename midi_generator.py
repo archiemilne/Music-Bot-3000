@@ -1,10 +1,14 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0" # use the first GPU device
+
 import numpy as np
 from music21 import converter, instrument, note, chord, stream
 from keras.layers import LSTM, Dense, Activation, Dropout
 from keras.models import Sequential
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint
+import tensorflow as tf
+tf.compat.v1.keras.backend.set_session(tf.compat.v1.Session())
 
 # Constant defs
 INPUT_FOLDER = 'midi_in'
@@ -13,6 +17,11 @@ SEQUENCE_LENGTH = 200
 EPOCHS = 100
 BATCH_SIZE = 32
 TEMPERATURE = 1.0
+
+# Configure TensorFlow to use GPU
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+tf.compat.v1.keras.backend.set_session(tf.compat.v1.Session(config=config))
 
 # Parse MIDI files
 def parse_midi_files(folder):
@@ -67,13 +76,14 @@ def prepare_sequences(notes, n_vocab):
 def create_lstm_model(input_shape, n_unique_notes):
     model = Sequential()
     model.add(LSTM(512, input_shape=input_shape, return_sequences=True))
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(LSTM(512, return_sequences=True))
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(LSTM(512))
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(Dense(256))
     model.add(Activation('relu'))
+    model.add(Dropout(0.2))
     model.add(Dense(n_unique_notes))
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
@@ -90,13 +100,14 @@ def generate_notes(model, network_input, pitchnames, n_notes, temperature=1.0):
         prediction_input = np.reshape(pattern, (1, len(pattern), 1))
         prediction_input = prediction_input / float(len(pitchnames))
         prediction = model.predict(prediction_input, verbose=0)
-        
+
         # Apply temperature
         prediction = np.log(prediction) / temperature
         exp_preds = np.exp(prediction)
         prediction = exp_preds / np.sum(exp_preds)
 
-        index = np.argmax(prediction)
+        # Sample from the predicted probabilities
+        index = np.random.choice(range(len(prediction[0])), p=prediction[0])
         result = int_to_note[index]
         prediction_output.append(result)
         pattern = np.append(pattern, index)
