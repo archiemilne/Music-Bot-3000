@@ -1,4 +1,5 @@
 
 *.mid
+!/example_outputs/*
 .vscode/settings.json
 *.hdf5
