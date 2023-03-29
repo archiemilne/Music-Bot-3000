@@ -9,4 +9,4 @@ Their training data was 7 Bruce Springsteen songs (Badlands, Born to Run, Hungry
 ### 23-03-29_FSB
 These two files came from a much longer length of training using the v1.3 code. 30 and 50 epochs with a training data of Beatles and various 50s and 60s Rock music.
 
-When listeing you can hear there is a small amount of structure forming, and even a solo in FSB50.
+When listeing you can hear there is a small amount of structure forming. It would be nice to hear a longer quantity of music produced, possibly a good goal for v1.4 of the code.
