@@ -13,9 +13,9 @@ tf.compat.v1.keras.backend.set_session(tf.compat.v1.Session())
 # Constant defs
 INPUT_FOLDER = 'midi_in'
 OUTPUT_FOLDER = 'midi_out'
-SEQUENCE_LENGTH = 200
-EPOCHS = 50 # Number of times to run
-PERIOD = 5 # Number of Epochs between outputs
+SEQUENCE_LENGTH = 400
+EPOCHS = 80 # Number of times to run
+PERIOD = 8 # Number of Epochs between outputs
 BATCH_SIZE = 32
 TEMPERATURE = 1.0
 
@@ -159,11 +159,14 @@ def main():
     model.fit(network_input, network_output, epochs=EPOCHS, batch_size=BATCH_SIZE, callbacks=[checkpoint_callback])
     pitchnames = sorted(set(item for item in notes))
 
-    # Generate MIDI files for each saved set of weights
+    # Generate 5 MIDI files for each saved set of weights
     for i in range(PERIOD, EPOCHS + 1, PERIOD):
         model.load_weights(f'weights/weights.{i:02d}.hdf5')
-        prediction_output = generate_notes(model, network_input, pitchnames, SEQUENCE_LENGTH, temperature=TEMPERATURE)
-        create_midi(prediction_output, OUTPUT_FOLDER, f'output_epoch_{i}')
+        for j in range(5):
+            print(f"Generating MIDI file {j+1} for epoch {i}")
+            prediction_output = generate_notes(model, network_input, pitchnames, SEQUENCE_LENGTH, temperature=TEMPERATURE)
+            print(f"Creating MIDI file {j+1} for epoch {i}")
+            create_midi(prediction_output, OUTPUT_FOLDER, f'output_epoch_{i}_file_{j+1}')
 
 if __name__ == '__main__':
     main()
